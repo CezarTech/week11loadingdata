@@ -1,0 +1,79 @@
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert' as convert;
+
+const String baseUrl = 'mobileweek10.000webhostapp.com';
+List<Product> _products = [];
+
+class Product {
+  int _pid;
+  String _name;
+  int _quantity;
+  double _price;
+  String _category;
+
+  Product(this._pid, this._name, this._quantity, this._price, this._category);
+
+  @override
+  String toString() {
+    return 'PID:$_pid Name:$_name\nQuantity:$_quantity Price:\$$_price\nCategory:$_category';
+  }
+}
+
+void updateProducts(Function(bool success) update) async {
+  // similar to thread kormal main thread ma tsewe block laan bada wa2t
+  try {
+    var url = Uri.https(baseUrl, 'getProducts.php'); //option we can use map
+    var response = await http.get(url).timeout(const Duration(
+        seconds: 5)); // await mitl join behal eta5ar 3n 5 beseer exception
+
+    if (response.statusCode == 200) {
+      _products.clear();
+
+      var data = convert.jsonDecode(response
+          .body); // heye ljason array mn objects as (String) nehna hown bl convert hawlneha la list of map rj3na sawyna loop w 3mlna var row w heda row la kill object as String
+      for (var row in data) {
+        int pid = int.parse(row['pid']);
+        String name = row['name'];
+        int quantity = int.parse(row['quntity']);
+        double price = double.parse(row['price']);
+        String category = row['category'];
+        _products.add(Product(pid, name, quantity, price, category));
+        
+      }
+      update(true);
+    } else {
+      update(false);
+    }
+  } catch (e) {
+    update(false);
+  }
+}
+
+class ShowProducts extends StatelessWidget {
+  const ShowProducts({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+        itemCount: _products.length,
+        itemBuilder: (context, index) => Column(
+              children: [
+                Container(
+                  width: 200,
+                  color: index % 2 == 0 ? Colors.cyan : Colors.amber,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _products[index].toString(),
+                        style: TextStyle(fontSize: 18),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 5),
+              ],
+            ));
+  }
+}
